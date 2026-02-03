@@ -1,22 +1,34 @@
+using BlazingPizza.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace BlazingPizza;
-
-[Route("specials")]
-[ApiController]
-public class SpecialsController : Controller
+namespace BlazingPizza
 {
-    private readonly PizzaStoreContext _db;
-
-    public SpecialsController(PizzaStoreContext db)
+    [ApiController]
+    [Route("specials")]
+    public class SpecialsController : ControllerBase
     {
-        _db = db;
-    }
+        private readonly PizzaStoreContext _db;
 
-    [HttpGet]
-    public async Task<ActionResult<List<PizzaSpecial>>> GetSpecials()
-    {
-        return (await _db.Specials.ToListAsync()).OrderByDescending(s => s.BasePrice).ToList();
+        public SpecialsController(PizzaStoreContext db)
+        {
+            _db = db;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<PizzaSpecial>>> GetSpecials()
+        {
+            // Load from SQLite WITHOUT ordering (SQLite limitation with decimal)
+            var specials = await _db.Specials
+                                    .AsNoTracking()
+                                    .ToListAsync();
+
+            // Order in memory (safe)
+            specials = specials
+                        .OrderByDescending(s => s.Price)
+                        .ToList();
+
+            return Ok(specials);
+        }
     }
 }

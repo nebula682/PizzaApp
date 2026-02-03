@@ -1,39 +1,46 @@
 using BlazingPizza;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddHttpClient();
-builder.Services.AddSqlite<PizzaStoreContext>("Data Source=pizza.db");
+builder.Services.AddControllers(); // API endpoints
 builder.Services.AddScoped<OrderState>();
+
+// Blazor Server HttpClient (relative paths)
+builder.Services.AddHttpClient(); 
+
+// SQLite DB
+builder.Services.AddSqlite<PizzaStoreContext>("Data Source=pizza.db");
 
 var app = builder.Build();
 
+// Error handling
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
 }
 
+// Static files & routing
 app.UseStaticFiles();
 app.UseRouting();
 
+// Map pages, Blazor hub, controllers, fallback
 app.MapRazorPages();
 app.MapBlazorHub();
+app.MapControllers();
 app.MapFallbackToPage("/_Host");
-app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
-// Initialize the database
-var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
-using (var scope = scopeFactory.CreateScope())
+// Seed database (always runs SeedData, even if DB exists)
+using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PizzaStoreContext>();
-    if (db.Database.EnsureCreated())
-    {
-        SeedData.Initialize(db);
-    }
+    db.Database.EnsureCreated();  // Make sure DB exists
+    SeedData.Initialize(db);      // Seed if empty
 }
 
-
 app.Run();
-

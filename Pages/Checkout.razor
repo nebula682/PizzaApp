@@ -1,0 +1,38 @@
+@page "/checkout"
+@using Model = BlazingPizza.Model
+@inject OrderState OrderState
+@inject NavigationManager NavigationManager
+
+<h2>Review Your Order</h2>
+
+@if (OrderState.Order.Pizzas.Count == 0)
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <div class="checkout-order-details">
+        @foreach (var pizza in OrderState.Order.Pizzas)
+        {
+            <div class="checkout-pizza">
+                <h3>@pizza.Special?.Name</h3>
+                <p>Size: @pizza.Size</p>
+                <p>Price: ZWL @pizza.GetFormattedTotalPrice()</p>
+            </div>
+        }
+
+        <div class="checkout-total">
+            Total: ZWL @OrderState.Order.Pizzas.Sum(p => p.Price).ToString("0.00")
+        </div>
+
+        <button class="btn btn-success" @onclick="PlaceOrder">Place Order</button>
+    </div>
+}
+
+@code {
+    private void PlaceOrder()
+    {
+        OrderState.Order.Pizzas.Clear();
+        NavigationManager.NavigateTo("/");
+    }
+}

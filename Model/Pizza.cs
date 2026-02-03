@@ -1,38 +1,28 @@
-﻿namespace BlazingPizza;
-
-/// <summary>
-/// Represents a customized pizza as part of an order
-/// </summary>
-public class Pizza
+﻿namespace BlazingPizza.Model
 {
-    public const int DefaultSize = 12;
-    public const int MinimumSize = 9;
-    public const int MaximumSize = 17;
-
-    public int Id { get; set; }
-
-    public int OrderId { get; set; }
-
-    public PizzaSpecial Special { get; set; }
-
-    public int SpecialId { get; set; }
-
-    public int Size { get; set; }
-
-    public List<PizzaTopping> Toppings { get; set; }
-
-    public decimal GetBasePrice()
+    public class Pizza
     {
-        return ((decimal)Size / (decimal)DefaultSize) * Special.BasePrice;
-    }
+        public int PizzaId { get; set; }
 
-    public decimal GetTotalPrice()
-    {
-        return GetBasePrice();
-    }
+        public int SpecialId { get; set; }
+        public PizzaSpecial? Special { get; set; }
 
-    public string GetFormattedTotalPrice()
-    {
-        return GetTotalPrice().ToString("0.00");
+        public string Size { get; set; } = "Medium"; // ✅ Changed from int to string
+
+        public List<PizzaTopping> Toppings { get; set; } = new();
+
+        public decimal Price => GetTotalPrice();
+
+        public decimal GetTotalPrice()
+        {
+            decimal total = Special?.Price ?? 0m;
+            total += Toppings.Sum(t => t.Topping?.Price ?? 0m);
+            return total;
+        }
+
+        public string GetFormattedTotalPrice()
+        {
+            return GetTotalPrice().ToString("C2", new System.Globalization.CultureInfo("en-ZW"));
+        }
     }
 }

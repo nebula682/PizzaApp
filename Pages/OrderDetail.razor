@@ -1,0 +1,52 @@
+@page "/myorders/{OrderId:int}"
+@using BlazingPizza.Model
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components
+
+<h2>Order Details</h2>
+
+@if (invalidOrder)
+{
+    <p>Order not found.</p>
+}
+else if (orderWithStatus == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <p>Order placed: @orderWithStatus.Order.CreatedTime.ToLongDateString()</p>
+    <p>Status: <strong>@orderWithStatus.StatusText</strong></p>
+
+    <div class="track-order-details">
+        @foreach (var pizza in orderWithStatus.Order.Pizzas)
+        {
+            <p>@pizza.Size @pizza.Special?.Name (ZWL @pizza.Price.ToString("0.00"))</p>
+        }
+
+        <p><strong>Total: ZWL @orderWithStatus.Order.GetFormattedTotalPrice()</strong></p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int OrderId { get; set; }
+
+    private OrderWithStatus? orderWithStatus;
+    private bool invalidOrder;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            orderWithStatus =
+                await HttpClient.GetFromJsonAsync<OrderWithStatus>(
+                    $"{NavigationManager.BaseUri}orders/{OrderId}");
+        }
+        catch
+        {
+            invalidOrder = true;
+        }
+    }
+}

@@ -1,35 +1,42 @@
-@inject HttpClient HttpClient
+@using Model = BlazingPizza.Model
+@using Microsoft.AspNetCore.Components
 
-<div class="dialog-container">
-    <div class="dialog">
-        <div class="dialog-title">
-            <h2>@Pizza.Special.Name</h2>
-            @Pizza.Special.Description
-        </div>
-        <form class="dialog-body">
-            <div>
-                <label>Size:</label>
-                <input type="range" min="@Pizza.MinimumSize" max="@Pizza.MaximumSize" step="1" @bind="Pizza.Size" @bind:event="oninput" />
-                <span class="size-label">
-                    @(Pizza.Size)" (£@(Pizza.GetFormattedTotalPrice()))
-                </span>
+@if (Pizza != null)
+{
+    <div class="modal-overlay">
+        <div class="configure-pizza-dialog">
+            <div class="dialog-title">
+                <h2>@Pizza.Special?.Name</h2>
+                <p>@Pizza.Special?.Description</p>
             </div>
-        </form>
 
-        <div class="dialog-buttons">
-            <button class="btn btn-secondary mr-auto" @onclick="OnCancel">Cancel</button>
-            <span class="mr-center">
-                Price: <span class="price">@(Pizza.GetFormattedTotalPrice())</span>
-            </span>
-            <button class="btn btn-success ml-auto" @onclick="OnConfirm">Order ></button>
+            <form class="dialog-body">
+                <label>Size:</label>
+                <select @bind="Pizza.Size">
+                    <option value="Small">Small</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Large">Large</option>
+                </select>
+                <span class="size-label">
+                    @($"{Pizza.Size} (£{Pizza.GetFormattedTotalPrice()})")
+                </span>
+            </form>
+
+            <div class="dialog-buttons">
+                <button type="button" class="btn btn-secondary"
+                        @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+
+                <span class="price-label">Price: £@Pizza.GetFormattedTotalPrice()</span>
+
+                <button type="button" class="btn btn-success"
+                        @onclick="() => OnConfirm.InvokeAsync()">Order &gt;</button>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
-
-    [Parameter] public Pizza Pizza { get; set; }
+    [Parameter] public Model.Pizza Pizza { get; set; } = default!;
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnConfirm { get; set; }
-
 }

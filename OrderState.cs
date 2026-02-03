@@ -1,45 +1,59 @@
-namespace BlazingPizza;
+using System.Collections.Generic;
+using System.Linq;
+using BlazingPizza.Model;
 
-public class OrderState
+namespace BlazingPizza
 {
-    public bool ShowingConfigureDialog { get; private set; }
-    public Pizza ConfiguringPizza { get; private set; }
-    public Order Order { get; private set; } = new Order();
-
-    public void ShowConfigurePizzaDialog(PizzaSpecial special)
+    public class OrderState
     {
-        ConfiguringPizza = new Pizza()
+        // Current order (MODEL Order)
+        public Order Order { get; private set; } = new Order();
+
+        // Configure Pizza dialog state
+        public bool ShowingConfigureDialog { get; private set; }
+        public Pizza? ConfiguringPizza { get; private set; }
+
+        // Show configure dialog
+        public void ShowConfigurePizzaDialog(PizzaSpecial special)
         {
-            Special = special,
-            SpecialId = special.Id,
-            Size = Pizza.DefaultSize,
-            Toppings = new List<PizzaTopping>(),
-        };
+            ConfiguringPizza = new Pizza
+            {
+                Special = special,
+                Size = "Medium"
+            };
 
-        ShowingConfigureDialog = true;
-    }
+            ShowingConfigureDialog = true;
+        }
 
-    public void CancelConfigurePizzaDialog()
-    {
-        ConfiguringPizza = null;
+        // Cancel dialog
+        public void CancelConfigurePizzaDialog()
+        {
+            ConfiguringPizza = null;
+            ShowingConfigureDialog = false;
+        }
 
-        ShowingConfigureDialog = false;
-    }
+        // Confirm dialog
+        public void ConfirmConfigurePizzaDialog()
+        {
+            if (ConfiguringPizza != null)
+            {
+                Order.Pizzas.Add(ConfiguringPizza);
+            }
 
-    public void ConfirmConfigurePizzaDialog()
-    {
-        Order.Pizzas.Add(ConfiguringPizza);
-        ConfiguringPizza = null;
+            ConfiguringPizza = null;
+            ShowingConfigureDialog = false;
+        }
 
-        ShowingConfigureDialog = false;
-    }
+        // Remove a pizza
+        public void RemoveConfiguredPizza(Pizza pizza)
+        {
+            Order.Pizzas.Remove(pizza);
+        }
 
-    public void RemoveConfiguredPizza(Pizza pizza)
-    {
-        Order.Pizzas.Remove(pizza);
-    }
-    
-    public void ResetOrder()
-    {
+        // Reset order
+        public void ResetOrder()
+        {
+            Order = new Order();
+        }
     }
 }

@@ -1,74 +1,114 @@
 @page "/"
+@using Model = BlazingPizza.Model
 @inject HttpClient HttpClient
-@inject NavigationManager NavigationManager
 @inject OrderState OrderState
+@inject NavigationManager NavigationManager
 
-<div class="main">
-  <h1>Blazing Pizzas</h1>
-  <ul class="pizza-cards">
-    @if (specials != null)
+<div class="content">
+
+    <!-- MAIN PIZZA GRID -->
+    <div class="main">
+        <h2>Blazing Pizzas</h2>
+
+        @if (specials == null)
+        {
+            <p>Loading specials...</p>
+        }
+        else if (!specials.Any())
+        {
+            <p>No specials available.</p>
+        }
+        else
+        {
+            <ul class="pizza-cards">
+                @foreach (var special in specials)
+                {
+                    <!-- Use absolute path for background image -->
+                    <li style="background-image: url('@(NavigationManager.BaseUri + special.ImageUrl)');">
+                        <div class="pizza-info">
+                            <h3 class="title">@special.Name</h3>
+                            <p>@special.Description</p>
+                            <p class="price">ZWL @special.Price.ToString("0.00")</p>
+
+                            <div class="pizza-sizes">
+    @foreach (var size in new[] { "Small", "Medium", "Large" })
     {
-      @foreach (var special in specials)
-      {
-          <li @onclick="@(() => OrderState.ShowConfigurePizzaDialog(special))" style="background-image: url('@special.ImageUrl')">
-          <div class="pizza-info">
-          <span class="title">@special.Name</span>
-          @special.Description
-          <span class="price">@special.GetFormattedBasePrice()</span>
-          </div>
-        </li>
-      }
+        <button class="btn btn-size"
+                @onclick="() => AddPizza(special, size)">
+            Add @size
+        </button>
     }
-  </ul>
 </div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
 
-@if (OrderState.ShowingConfigureDialog)
-{
-    <ConfigurePizzaDialog
-      Pizza="OrderState.ConfiguringPizza"
-      OnCancel="OrderState.CancelConfigurePizzaDialog"
-      OnConfirm="OrderState.ConfirmConfigurePizzaDialog" />
-}
+    <!-- SIDEBAR CART -->
+    <div class="sidebar">
+        <h3>Your Cart</h3>
 
-<div class="sidebar">
-    @if (order.Pizzas.Any())
-    {
-        <div class="order-contents">
-            <h2>Your order</h2>
-
-            @foreach (var configuredPizza in order.Pizzas)
+        @if (OrderState.Order.Pizzas.Count == 0)
+        {
+            <p>No pizzas yet.</p>
+        }
+        else
+        {
+            @foreach (var pizza in OrderState.Order.Pizzas)
             {
-              <div class="cart-item">
-                  <a @onclick="@(() => OrderState.RemoveConfiguredPizza(configuredPizza))" class="delete-item">x</a>
-                  <div class="title">@(configuredPizza.Size)" @configuredPizza.Special.Name</div>
-                  <div class="item-price">
-                      @configuredPizza.GetFormattedTotalPrice()
-                  </div>
-              </div>
+                <div class="cart-item">
+                    <span class="title">@pizza.Size @pizza.Special?.Name</span>
+                    <span class="price">ZWL @pizza.Price.ToString("0.00")</span>
+                    <span class="delete-item" @onclick="() => RemovePizza(pizza)">✖</span>
+                </div>
             }
-        </div>
-    }
-    else
-    {
-        <div class="empty-cart">Choose a pizza<br>to get started</div>
-    }
 
-    <div class="order-total @(order.Pizzas.Any() ? "" : "hidden")">
-        Total:
-        <span class="total-price">@order.GetFormattedTotalPrice()</span>
-        <a href="checkout" class="@(OrderState.Order.Pizzas.Count == 0 ? "btn btn-warning disabled" : "btn btn-warning")">
-            Order >
-        </a>
+            <div class="order-total">
+                Total: ZWL @OrderState.Order.Pizzas.Sum(p => p.Price).ToString("0.00")
+                <button class="btn btn-order" @onclick="GoToCheckout">Order Now</button>
+            </div>
+        }
     </div>
 </div>
 
 @code {
-  List<PizzaSpecial> specials = new List<PizzaSpecial>();
-  Order order => OrderState.Order;
+    private List<Model.PizzaSpecial> specials;
 
-  protected override async Task OnInitializedAsync()
-  {
-      specials = await HttpClient.GetFromJsonAsync<List<PizzaSpecial>>(NavigationManager.BaseUri + "specials");
-  }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Build full URL using NavigationManager (Option 1 for Blazor Server)
+            var uri = NavigationManager.BaseUri + "specials";
+            specials = await HttpClient.GetFromJsonAsync<List<Model.PizzaSpecial>>(uri);
+        }
+        catch (Exception ex)
+        {
+            specials = new List<Model.PizzaSpecial>();
+            Console.Error.WriteLine($"Failed to load specials: {ex.Message}");
+        }
+    }
+
+    private void AddPizza(Model.PizzaSpecial special, string size)
+    {
+        var pizza = new Model.Pizza
+        {
+            Special = special,
+            Size = size
+        };
+
+        OrderState.Order.Pizzas.Add(pizza);
+    }
+
+    private void RemovePizza(Model.Pizza pizza)
+    {
+        OrderState.Order.Pizzas.Remove(pizza);
+    }
+
+    private void GoToCheckout()
+    {
+        NavigationManager.NavigateTo("/checkout");
+    }
 }
-		
